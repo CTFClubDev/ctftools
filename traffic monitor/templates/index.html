@@ -1,0 +1,237 @@
+<html>
+<head>
+    <style>
+    td.payload {width: 700px;}
+    tr {cursor: pointer;}
+    tr:hover {background-color: #f0f0f0; }
+    .a_like {
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer; /* Для указания, что это элемент можно кликнуть */
+    }
+
+    .a_like:hover {
+        text-decoration: underline; /* Когда курсор мыши находится над элементом */
+    }
+    .a_like:active {
+        color: purple; /* При нажатии */
+    }
+    </style>
+</head>
+<script>
+var a = 0;
+function expand(target){
+    el = target.parentElement.children[2];
+    disp = el.style.display;
+    if (disp == "none"){
+        el.style.display = 'inline';
+        target.innerHTML="UNEXPAND";
+    }
+    else{
+        el.style.display = 'none';
+        target.innerHTML="EXPAND";
+    }
+    target.scrollIntoView;
+    return false;
+}
+
+function hexWithAsciiAndOffset(buffer) {
+    blockSize = 16;
+    var lines = [];
+    var hex = "0123456789ABCDEF";
+    for (var b = 0; b < buffer.length; b += blockSize) {
+        var block = buffer.slice(b, Math.min(b + blockSize, buffer.length));
+        var addr = ("0000" + b.toString(16)).slice(-4);
+        var codes = block.split('').map(function (ch) {
+            var code = ch.charCodeAt(0);
+            return " " + hex[(0xF0 & code) >> 4] + hex[0x0F & code];
+        }).join("");
+        codes += "   ".repeat(blockSize - block.length);
+        var chars = block.replace(/[\x00-\x1F\x20]/g, '.');
+        chars +=  " ".repeat(blockSize - block.length);
+        lines.push(addr + " " + codes + "  " + chars);
+    }
+    return lines.join("\n");
+}
+function ClearHex(buffer) {
+    var content = [];
+    var hex = "0123456789abcdef";
+    for (var i=0 ; i<buffer.length; i++){
+        var code = buffer.charCodeAt(i)
+        content.push(hex[(0xF0 & code) >> 4] + hex[0x0F & code]);
+    }
+    return content;
+}
+function ShowInHex(target){
+    els = target.parentElement.children;
+    a=els;
+    for (var i=3; i<els.length; i++){
+        el = els[i];
+        var cont = el.getAttribute('content');
+        el.innerHTML = mescape(hexWithAsciiAndOffset(atob(cont)));
+    }
+}
+function ShowInPyBin(target){
+    els = target.parentElement.children;
+    a=els;
+    width=16;
+    for (var idx_el=3; idx_el<els.length; idx_el++){
+        el = els[idx_el];
+        cont = ClearHex(atob(el.getAttribute('content')));
+        allcont="";
+        var i;
+        for (i=0; i<cont.length/width; i++){
+            pycont = 'b"';
+            cont.slice(i*width,(i+1)*width).forEach((c) => {
+                pycont += "\\x"+c
+            })
+            if (cont.length % width !=0 && i+1 >= cont.length/width){
+                pycont += '";';
+            }
+            else {
+                pycont += '"+\\\n';
+            }
+            allcont+=pycont
+        }
+        el.innerHTML = allcont;
+    }
+}
+function mescape(s){
+    escapeStr = s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return escapeStr
+}
+function ShowInASCII(target){
+    els = target.parentElement.children;
+    a=els;
+    for (var i=3; i<els.length; i++){
+        el = els[i];
+        if (el.getAttribute('content') == null){
+            el.setAttribute('content',el.innerHTML);
+        }
+        el.innerHTML=mescape(atob(el.getAttribute('content')));
+    }
+}
+function Reloader(){
+    window.location = "/"+window.location.search
+}
+function init(){
+    all_pre = document.querySelectorAll("#pak pre.content");
+    for (var i=0; i<all_pre.length; i++){
+        el = all_pre[i];
+        if (el.getAttribute('content') == null){
+            el.setAttribute('content',el.innerHTML)
+        }
+        el.innerHTML=mescape(atob(el.getAttribute('content')));
+    }
+    urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('filter_regex')){
+        document.getElementById('filter_input').value = urlParams.get('filter_regex');
+    }
+    if (urlParams.has('reload') && parseInt(urlParams.get('reload')) > 0){
+        tm = parseInt(urlParams.get('reload'));
+        setTimeout("Reloader()",1000*tm);
+    }
+}
+function ShowDate(){
+    var date = document.getElementById('show_date').value;
+    if (date.length > 0){
+        urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('from_time')){
+            urlParams.delete('from_time');
+        }
+        urlParams.append('from_time',date);
+        window.location = "/?" + urlParams.toString();
+    }
+}
+function gotodate(t){
+    if(event.key === 'Enter') {
+        ShowDate();
+    }
+}
+function FilterClick(){
+    var filter = document.getElementById('filter_input').value;
+    if (filter.length > 0){
+        urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('filter_regex')){
+            urlParams.delete('filter_regex');
+        }
+        urlParams.append('filter_regex',filter);
+        window.location = "/?" + urlParams.toString();
+    }
+    else{
+        urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('filter_regex')){
+            urlParams.delete('filter_regex');
+        }
+        window.location = "/?" + urlParams.toString();
+    }
+}
+function filter_enter(t){
+    if(event.key === 'Enter') {
+        FilterClick();
+    }
+}
+function GoTo(param,value){
+    urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has(param)){
+        urlParams.delete(param);
+    }
+    urlParams.append(param,value);
+    window.location = "/?" + urlParams.toString();
+}
+</script>
+<body onload='init()'>
+    {% for s in services: %}
+    <span>
+    <a href='/?srv={{s}}'>{{ s }} ({{services[s]['port']}}/{{services[s]['proto']}})</a>
+    </span>
+    {% endfor %}
+    <div>
+    <div>TIME from {{ time_from }} - {{ time_to }}<input style="width:60px" placeholder="HH:MM" onkeydown="gotodate(this)"  type=text id="show_date" /><input type='button' onclick="ShowDate()" value="show"/>
+    <a href="#" onclick="GoTo('show_minutes',4*60)">SHOW 4h</a>&nbsp;
+    <a href="#" onclick="GoTo('show_minutes',30)">SHOW 30m</a>&nbsp;
+    <a href="#" onclick="GoTo('reload',30)">Reload 30s</a>&nbsp;
+    <a href="#" onclick="GoTo('reload',0)">Reload NO</a>&nbsp;
+    <a href="#" onclick="GoTo('from_time','')">TO LATEST</a>&nbsp;
+    <div>Filter:<input style="width:300px" placeholder="regexp" onkeydown="filter_enter(this)"  type=text id="filter_input" />
+    <input type='button' onclick="FilterClick()" value="show"/></div>
+    </div>
+    <table id="pak">
+        <thead>
+        <td class='payload'>payload</td><td>info</td><td>time</td>
+        </thead>
+        <tbody>
+        {% for c in tcp_connections %}
+        <tr>
+            <td class='payload'>
+                cnt:{{ c['requests_count'] }}
+                <span class="a_like" onclick="expand(this)">EXPAND</span>
+                <pre style="display:inline">{{ c['brief'] }}</pre>
+                <span style='display:none'>
+                    <span class="a_like" onclick="ShowInASCII(this)">ASCII</span>&nbsp;
+                    <span class="a_like" onclick="ShowInHex(this)" href="#">HEX</span>&nbsp;
+                    <span class="a_like" onclick="ShowInPyBin(this)" href="#">PY</span>
+                    {% for r in c['requests'] %}
+                    {% if r['direction'] == "<" %}
+                        <pre class="content" style="color: #ff1010">{{ r['content'].decode() }}</pre>
+                    {% elif r['direction'] == ">" %}
+                        <pre class="content" style="color: #1010ff">{{ r['content'].decode() }}</pre>
+                    {% endif %}
+
+                    {% endfor %}
+                </span>
+            </td>
+
+            <td>
+            {% for m in c['mark'] %}
+                <span style="background-color: {{ m['color'] }}">{{ m['name'] }}</span>
+            {% endfor %}
+            </td>
+            <td>{{ c['end_time'] }} port:{{ c['cport'] }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</body>
+</html>

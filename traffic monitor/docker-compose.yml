@@ -1,0 +1,10 @@
+version: "4.0"
+
+services:
+    netblock:
+        build: .
+        volumes:
+            - .:/home/net
+        network_mode: "host"
+        cap_add:
+            - NET_ADMIN
