@@ -1,0 +1,12 @@
+version: '2.1'
+
+
+services:
+    my_kv_serv:
+       build: .
+       restart: unless-stopped
+       image: kv_serv1
+       ports:
+            - 8000:7000
+       volumes:
+            - ./service/:/home/task

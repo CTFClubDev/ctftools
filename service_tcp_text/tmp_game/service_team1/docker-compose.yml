@@ -1,0 +1,11 @@
+version: '2.1'
+
+
+services:
+    my_kv_serv:
+       build: .
+       restart: unless-stopped
+       ports:
+            - 10100:7000
+       volumes:
+            - ./service/:/home/task
